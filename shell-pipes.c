@@ -116,10 +116,26 @@ void shell_loop() {
     } while (status);
 }
 int main() {
-    printf("Enter the number of CPU resources : ");
-    scanf("%d",&ncpu);
-    printf("Enter the time slice : ");
-    scanf("%d",&tslice);
+
+    char msg1[] = "Enter the number of CPU resources: ";
+    write(STDOUT_FILENO, msg1, sizeof(msg1));
+    if (scanf("%d", &ncpu) != 1) {
+        printf("Invalid input for CPU resources. Please enter an integer.\n");
+        exit(EXIT_FAILURE);
+    }
+    printf("You entered: %d\n", ncpu);
+    
+    char msg2[] = "Enter the number of Time Slice: ";
+    write(STDOUT_FILENO, msg2, sizeof(msg2));
+    if (scanf("%d", &tslice) != 1) {
+        printf("Invalid input for CPU resources. Please enter an integer.\n");
+        exit(EXIT_FAILURE);
+    }
+    printf("You entered: %d\n", tslice);
+
+    setbuf(stdin, NULL);  // Set input stream to unbuffered mode
+    setbuf(stdout, NULL); // Set output stream to unbuffered mode
+    
     signal(SIGINT, sigint_handler);
     shell_loop();
     return 0;

@@ -116,6 +116,10 @@ void shell_loop() {
     } while (status);
 }
 int main() {
+    printf("Enter the number of CPU resources : ");
+    scanf("%d",&ncpu);
+    printf("Enter the time slice : ");
+    scanf("%d",&tslice);
     signal(SIGINT, sigint_handler);
     shell_loop();
     return 0;

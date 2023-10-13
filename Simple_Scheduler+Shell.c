@@ -2,9 +2,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <sys/time.h>
+#include <time.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <stdbool.h>
+#include <signal.h>
 #define CLOCKS_PER_SEC ((clock_t)1000000)
 #define MAX_COMMAND_LENGTH 1024
 #define MAX_ARGUMENTS 1024
@@ -20,6 +22,17 @@ int ab=0;
 int cd=0;
 int ncpu;
 int tslice;
+int index_rq = 0;
+int n_jobs = 0;
+typedef struct process {
+    pid_t child_pid;
+    long entry_time;
+    long execution_time;
+    bool execution_happening;
+    bool execution_done;
+    char path[100];
+} process;
+process ready_q[512];
 void delete_elements(char **arr) {
     for (int i = 0; arr[i] != NULL; i++) {
         free(arr[i]);
@@ -93,24 +106,75 @@ char **read_user_input(int ab) {
 int launch (char *args[]) {
     int status;
     int i=0;
-    if(strcmp(args[0],"history")==0){
-        for (int i=0; i<=ab;i++){
-        printf("%s",history_save[i]);
-        printf("\n");
-        }
-        return 1;    
-    }
-    else{
+    if(strcmp(args[0],"submit")!=0){
         status=create_process_and_run(args);
     }
+    else{
+        strcpy(ready_q[index_rq].path,args[1]);
+        ready_q[index_rq].child_pid = 0;
+        ready_q[index_rq].entry_time = (long)clock() / CLOCKS_PER_SEC;
+        ready_q[index_rq].execution_time = 0;
+        ready_q[index_rq].execution_happening = false;
+        ready_q[index_rq].execution_done = false;
+        index_rq +=1;
+        int i=0;
+        int j=0;
+
+        while((index_rq - n_jobs != 0)){
+            while(true){
+                if(ready_q[i].execution_done == false){
+                    j+=1;
+                }
+                else{
+                    i += 1;
+                    continue;
+                }
+
+
+
+
+
+
+                if(j==ncpu){
+                    break;
+                }
+                else{
+                    i+=1;
+                }
+
+                
+                if( i == index_rq){
+                    i = 0;
+                }
+
+
+            }
+        }
+
+    }
     return status; 
+}
+void show_paths(){
+    for (int i = 0; i < index_rq ; i++){
+        write(STDOUT_FILENO,ready_q[i].path,sizeof(ready_q[i].path));
+        char msg5[] = "\n";
+        write(STDOUT_FILENO, msg5, sizeof(msg5));
+        setbuf(stdout, NULL);
+    }
 }
 void shell_loop() {
     int status;
     do {
         printf("device@user~$ ");
         char **args = read_user_input(ab);
+        char msg3[10];
+        strcpy(msg3,args[0]);
+        write(STDOUT_FILENO, msg3, sizeof(msg3));
+        char msg4[] = "\n";
+        write(STDOUT_FILENO, msg4, sizeof(msg4));
+        setbuf(stdout, NULL);
         status = launch(args);
+        show_paths();
         free(args);
         ab++;
     } while (status);

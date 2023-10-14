@@ -22,13 +22,13 @@ int ab=0;
 int cd=0;
 int ncpu;
 int tslice;
-int index_rq = 0;
-int n_jobs = 0;
+int index_rq = 0;//total no of jobs = index_rq-1
+int n_jobs = 0;//no of jobs done therefore when execution done == true then increment 
+// while loop condition should be index_rq - njobs != 1
 typedef struct process {
     pid_t child_pid;
     long entry_time;
     long execution_time;
-    bool execution_happening;
     bool execution_done; // important **
     char path[100];
     bool picked;
@@ -50,11 +50,32 @@ void print_pid() {
         printf("Run Time:%f\n",runtimes[i]);
     }
 }
-
+void show_paths(){
+    for (int i = 0; i < index_rq ; i++){
+        write(STDOUT_FILENO,ready_q[i].path,sizeof(ready_q[i].path));
+        char msg5[] = "\n";
+        write(STDOUT_FILENO, msg5, sizeof(msg5));
+        setbuf(stdout, NULL);
+    }
+}
 void sigint_handler(int signum) {
     print_pid();
     exit(0);
 }
+void sigint_handler2(int signum) {
+    //show_paths();
+    //Checkmark_process_for_Execution();
+    exit(0);
+}
+// if signal recienved from user : SIGQUIT
+// schedular execution begin -> checkmark -> picked turns true -> execution block-> old picked turnes to false -> step 2 to 5 are in while loop with conditon indeq_rq - njobs != 0 
+//if (ready_q[i].picked == true){
+    // kill(ready_q[i].child_pid , SIGCONT);
+    // ready_q[i].execution_time += tslice;
+    // usleep(tslice*1000);
+    // kill(ready_q[i].child_pid , SIGSTOP);
+    // ready_q[i].picked = false ;
+    //}
  
 int create_process_and_run(char *args[]) {
     start_times[cd] = (double)clock() / CLOCKS_PER_SEC;
@@ -104,6 +125,53 @@ char **read_user_input(int ab) {
     }
     return result;
 }
+void Checkmark_process_for_Execution(){
+    int i=0;
+    int j=0;
+    while(true){
+        if(ready_q[i].execution_done == false){
+            j+=1;
+            if(ready_q[i].child_pid == 0){
+                ready_q[i].child_pid = fork();
+                if(ready_q[i].child_pid == 0){
+                    execlp(ready_q[i].path,ready_q[i].path,NULL);
+                }
+                else{
+                    usleep(100);
+                    kill(ready_q[i].child_pid , SIGSTOP);
+                }
+            }
+            if(ready_q[i].child_pid != 0){
+                ready_q[i].picked = true;
+            }
+        }else{
+            i += 1;
+            continue;
+        }
+        if(j==ncpu){
+            break;
+        }
+        else{
+            i+=1;
+        }
+        if( i == index_rq){
+            i = 0;
+        }
+    }
+}
+
+void Create_process_node(char *args[]){
+    //creating the node of ready queue
+        strcpy(ready_q[index_rq].path,args[1]);
+        ready_q[index_rq].child_pid = 0;
+        ready_q[index_rq].entry_time = (long)clock() / CLOCKS_PER_SEC;
+        ready_q[index_rq].execution_time = 0;
+        ready_q[index_rq].execution_done = false;
+        ready_q[index_rq].picked = false;
+        //updating last ready queue pointer 
+        index_rq +=1;
+        show_paths();
+}
 int launch (char *args[]) {
     int status;
     int i=0;
@@ -111,99 +179,22 @@ int launch (char *args[]) {
         status=create_process_and_run(args);
     }
     else{
-        strcpy(ready_q[index_rq].path,args[1]);
-        ready_q[index_rq].child_pid = 0;
-        ready_q[index_rq].entry_time = (long)clock() / CLOCKS_PER_SEC;
-        ready_q[index_rq].execution_time = 0;
-        ready_q[index_rq].execution_happening = false;
-        ready_q[index_rq].execution_done = false;
-        ready_q[index_rq].picked = false;
-        
-        index_rq +=1;
-        int i=0;
-        int j=0;
-
-        while((index_rq - n_jobs != 0)){
-            while(true){
-                if(ready_q[i].execution_done == false){
-                    j+=1;
-                    if(ready_q[i].child_pid == 0){
-                        ready_q[i].child_pid = fork();
-                        if(ready_q[i].child_pid == 0){
-                            //char buff1[] = "secret in child";
-                            //write(STDOUT_FILENO,buff1,sizeof(buff1));
-                            //setbuf(stdout, NULL);
-                            execlp(ready_q[i].path,ready_q[i].path,NULL);
-                        }
-                        else{
-                            usleep(100);
-                            // char buff[] = "secret";
-                            // write(STDOUT_FILENO,buff,sizeof(buff));
-                            // setbuf(stdout, NULL);
-                            kill(ready_q[i].child_pid , SIGSTOP);
-                        }
-                    }
-                    if(ready_q[i].child_pid != 0){
-                        ready_q[i].picked = true;
-                        // if signal recienved from user :
-                        // kill(ready_q[i].child_pid , SIGCONT);
-                        // ready_q[i].execution_happening = true;
-                        // ready_q[i].execution_time += tslice;
-                        // usleep(tslice*1000);
-                        // kill(ready_q[i].child_pid , SIGSTOP);
-                        // ready_q[i].execution_happening = false;
-                    }
-                }
-                else{
-                    i += 1;
-                    continue;
-                }
-
-
-
-
-
-
-                if(j==ncpu){
-                    break;
-                }
-                else{
-                    i+=1;
-                }
-
-
-                if( i == index_rq){
-                    i = 0;
-                }
-
-
-            }
-        }
-
+        Create_process_node(args);
     }
     return status; 
-}
-void show_paths(){
-    for (int i = 0; i < index_rq ; i++){
-        write(STDOUT_FILENO,ready_q[i].path,sizeof(ready_q[i].path));
-        char msg5[] = "\n";
-        write(STDOUT_FILENO, msg5, sizeof(msg5));
-        setbuf(stdout, NULL);
-    }
 }
 void shell_loop() {
     int status;
     do {
         printf("device@user~$ ");
         char **args = read_user_input(ab);
-        char msg3[10];
-        strcpy(msg3,args[0]);
-        write(STDOUT_FILENO, msg3, sizeof(msg3));
-        char msg4[] = "\n";
-        write(STDOUT_FILENO, msg4, sizeof(msg4));
-        setbuf(stdout, NULL);
+        // char msg3[10];
+        // strcpy(msg3,args[0]);
+        // write(STDOUT_FILENO, msg3, sizeof(msg3));
+        // char msg4[] = "\n";
+        // write(STDOUT_FILENO, msg4, sizeof(msg4));
+        // setbuf(stdout, NULL);
         status = launch(args);
-        show_paths();
         free(args);
         ab++;
     } while (status);
@@ -230,6 +221,7 @@ int main() {
     setbuf(stdout, NULL); // Set output stream to unbuffered mode
     
     signal(SIGINT, sigint_handler);
+    signal(SIGQUIT,sigint_handler2);//press ctrl + '\' to begin schedular
     shell_loop();
     return 0;
 }

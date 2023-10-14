@@ -29,8 +29,9 @@ typedef struct process {
     long entry_time;
     long execution_time;
     bool execution_happening;
-    bool execution_done;
+    bool execution_done; // important **
     char path[100];
+    bool picked;
 } process;
 process ready_q[512];
 void delete_elements(char **arr) {
@@ -116,6 +117,8 @@ int launch (char *args[]) {
         ready_q[index_rq].execution_time = 0;
         ready_q[index_rq].execution_happening = false;
         ready_q[index_rq].execution_done = false;
+        ready_q[index_rq].picked = false;
+        
         index_rq +=1;
         int i=0;
         int j=0;
@@ -124,6 +127,32 @@ int launch (char *args[]) {
             while(true){
                 if(ready_q[i].execution_done == false){
                     j+=1;
+                    if(ready_q[i].child_pid == 0){
+                        ready_q[i].child_pid = fork();
+                        if(ready_q[i].child_pid == 0){
+                            //char buff1[] = "secret in child";
+                            //write(STDOUT_FILENO,buff1,sizeof(buff1));
+                            //setbuf(stdout, NULL);
+                            execlp(ready_q[i].path,ready_q[i].path,NULL);
+                        }
+                        else{
+                            usleep(100);
+                            // char buff[] = "secret";
+                            // write(STDOUT_FILENO,buff,sizeof(buff));
+                            // setbuf(stdout, NULL);
+                            kill(ready_q[i].child_pid , SIGSTOP);
+                        }
+                    }
+                    if(ready_q[i].child_pid != 0){
+                        ready_q[i].picked = true;
+                        // if signal recienved from user :
+                        // kill(ready_q[i].child_pid , SIGCONT);
+                        // ready_q[i].execution_happening = true;
+                        // ready_q[i].execution_time += tslice;
+                        // usleep(tslice*1000);
+                        // kill(ready_q[i].child_pid , SIGSTOP);
+                        // ready_q[i].execution_happening = false;
+                    }
                 }
                 else{
                     i += 1;
@@ -142,7 +171,7 @@ int launch (char *args[]) {
                     i+=1;
                 }
 
-                
+
                 if( i == index_rq){
                     i = 0;
                 }

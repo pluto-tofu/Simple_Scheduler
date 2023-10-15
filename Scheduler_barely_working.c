@@ -70,14 +70,8 @@ void sigint_handler2(int signum) {
 }
 // if signal recienved from user : SIGQUIT
 // schedular execution begin -> checkmark -> picked turns true -> execution block-> old picked turnes to false -> step 2 to 5 are in while loop with conditon indeq_rq - njobs != 0 
-//if (ready_q[i].picked == true){
-    // kill(ready_q[i].child_pid , SIGCONT);
-    // ready_q[i].execution_time += tslice;
-    // usleep(tslice*1000);
-    // kill(ready_q[i].child_pid , SIGSTOP);
-    // ready_q[i].picked = false ;
-    //}
- 
+
+// okay tested 
 int create_process_and_run(char *args[]) {
     start_times[cd] = (double)clock() / CLOCKS_PER_SEC;
     int status = fork();
@@ -103,6 +97,7 @@ int create_process_and_run(char *args[]) {
     }
     return 1;
 }
+// okay tested
 char **read_user_input(int ab) {
     char userInput[MAX_COMMAND_LENGTH];
     fgets(userInput, sizeof(userInput), stdin);
@@ -126,73 +121,7 @@ char **read_user_input(int ab) {
     }
     return result;
 }
-void Checkmark_process_for_Execution(){
-    int i=0; // i is the index of the job that has been picked 
-    int j=0; // j is the number of jobs picked up 
-    while(true){
-        if(ready_q[i].execution_done == false){
-            j+=1;
-            if(ready_q[i].child_pid == 0){
-                ready_q[i].child_pid = fork();
-                if(ready_q[i].child_pid == 0){
-                    execlp(ready_q[i].path,ready_q[i].path,NULL);
-                    exit(0);
-                }
-                else{
-                    usleep(10);
-                    kill(ready_q[i].child_pid , SIGSTOP);
-                    // int exit_status;
-                    // waitpid(ready_q[i].child_pid,&exit_status,0);
-                    // if(WIFEXITED(exit_status)){
-                    //     // child has finished it's work
-                    //     ready_q[i].execution_done = true;
-                    //     n_jobs += 1;
-                    //     printf("%B\n", ready_q[i].execution_done);
-                    // }
-                    
-
-                }
-            }
-            if(ready_q[i].child_pid != 0){
-                char msg7[] = "message 7";
-                write(STDOUT_FILENO,ready_q[i].path,sizeof(ready_q[i].path));
-                write(STDOUT_FILENO, msg7, sizeof(msg7));
-                setbuf(stdout, NULL);
-                ready_q[i].picked = true;
-            }
-        }else{
-            i += 1;
-            if(index_rq - n_jobs < j){
-                break;
-            }
-            continue;
-        }
-        if(j==ncpu){
-            break;
-        }
-        else{
-            i+=1;
-        }
-        if( i == index_rq){
-            i = 0;
-        }
-    }
-    int a = 0;
-    while(true){
-        if(ready_q[a].picked == true){
-            kill(ready_q[a].child_pid, SIGCONT);
-            int exit_status;
-            waitpid(ready_q[i].child_pid,&exit_status,0);
-            if(WIFEXITED(exit_status)){
-                // child has finished it's work
-                ready_q[i].execution_done = true;
-                n_jobs += 1;
-                printf("%B\n", ready_q[i].execution_done);
-            }  
-        }
-    }
-}
-
+// okay tested
 void Create_process_node(char *args[]){
     //creating the node of ready queue
         strcpy(ready_q[index_rq].path,args[1]);
@@ -205,7 +134,7 @@ void Create_process_node(char *args[]){
         index_rq +=1;
         show_paths();
 }
-
+// okay tested
 void prime_processes(){
     for(int i = 0 ; i < index_rq ; i++){
         int child_pid = fork();
@@ -226,49 +155,34 @@ void prime_processes(){
         }
     }
 }
-// void schedule_processes(){
-//     index_rq = 0;
-//     while(true){
-//         for (int i = index_rq ; i < index_rq + ncpu ; i++){
-//         kill(ready_q[i].child_pid,SIGCONT);
-//         ready_q[i].execution_time += tslice;
-//         }
-//         usleep(tslice * 1000);
-//         for (int i = index_rq ; i < index_rq + ncpu ; i++){
-//             kill(ready_q[i].child_pid, SIGSTOP);
-//         } 
-//         index_rq += ncpu;
-//         if(index_rq >= sizeof(ready_q)/sizeof(process)){
-//             index_rq = 0;
-//         }
-//         if(sizeof(ready_q)/sizeof(process)==n_jobs){
-//             break;
-//         }
-//     }
-// }
+// important
 void schedule_processes(){
     // waitpid(child pid , - , WNOHANG) is used to check the current status of the child
     int i = 0;
+    int index_of = 0;
     while(true){
-        for (i ; i < ncpu ; i++){
+        for (i = index_of ; i < index_of + ncpu ; i++){
             kill(ready_q[i].child_pid,SIGCONT);
             ready_q[i].execution_time += tslice;
         }
         usleep(tslice * 1000);
-        for (i ; i < ncpu ; i++){
+        for (i = index_of ; i < index_of + ncpu ; i++){
             int result = waitpid(ready_q[i].child_pid,NULL,WNOHANG);
             if(result == 0){
                 kill(ready_q[i].child_pid,SIGSTOP);
             }
             else{
                 i += 1;
+                n_jobs+=1;
             }
         }
-        i += ncpu;
-        if(i == index_rq){
-            i = 0;
+        index_of += ncpu;
+        if(index_of >= index_rq){
+            index_of = 0;
         }
         if(index_rq - n_jobs - 1 == 0){
+            write(STDOUT_FILENO,index_rq,sizeof(index_rq));
+            setbuf(stdout, NULL);
             break;
         }
     }

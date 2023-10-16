@@ -1,1 +1,2 @@
+This implementation of a simple scheduler integrates the scheduler and shell into one code file
 

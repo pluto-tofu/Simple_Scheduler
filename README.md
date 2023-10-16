@@ -8,4 +8,7 @@ when the user is done submitting, they input a custom signal (ctrl + \ in this i
 to start the scheduling process. the scheduler performs round robin execution based on the <br>
 number of cpu resources and the time slice as inputted by the user at the beginning of the program.<br>
 The output is then shown and a summary which contains the process id (pid), execution time and wait <br>
-time is also shown. After this the shell resumes execution as normal.
+time is also shown. After this the shell resumes execution as normal.<br>
+
+link to Github repository : https://github.com/pluto-tofu/Simple_Scheduler
+

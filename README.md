@@ -10,5 +10,7 @@ number of cpu resources and the time slice as inputted by the user at the beginn
 The output is then shown and a summary which contains the process id (pid), execution time and wait <br>
 time is also shown. After this the shell resumes execution as normal.<br>
 
-link to Github repository : https://github.com/pluto-tofu/Simple_Scheduler
+link to Github repository : https://github.com/pluto-tofu/Simple_Scheduler <br>
+
+contributions : All logic and code written together and with mutual agreement.
 

@@ -1,5 +1,6 @@
 # Simple_Scheduler
-this implementation of the simple scheduler integrates the scheduler into the code file <br>
+
+This implementation of the simple scheduler integrates the scheduler into the code file <br>
 of the simple shell. The shell as instructed has now been stripped of any functionality <br>
 containing pipes. The user inputs the path of the binary files that they want to execute <br>
 using the submit command, the submit command pushes all these processes into the ready queue.<br>

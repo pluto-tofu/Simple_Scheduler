@@ -218,7 +218,7 @@ void shell_loop() {
 }
 
 void sigint_handler2(int signum) {
-    //brute force//
+    /*                                                                                                                                                                                                            /
     // if (index_rq-1 > ncpu && (index_rq) % ncpu != 0) {
     //         rounds = ((index_rq)/ncpu) + 1;
     //     }else if( (index_rq) % ncpu == 0 && index_rq > ncpu){ 
@@ -226,7 +226,7 @@ void sigint_handler2(int signum) {
     //     }else{ 
     //         rounds = 1;
     // }
-    ncpu = index_rq;
+    /*                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           */ncpu = index_rq;
     prime_processes();
     // for (int i =0 ; i < rounds;i++){
         schedule_processes(ncpu);

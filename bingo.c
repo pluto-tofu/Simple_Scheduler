@@ -30,17 +30,12 @@ typedef struct process {
     pid_t child_pid;
     long entry_time;
     long execution_time;
-    bool execution_done; // important **
+    bool execution_done; // important 
+    long exit_time;
     char path[100];
     bool picked;
 } process;
 process ready_q[512];
-void delete_elements(char **arr) {
-    for (int i = 0; arr[i] != NULL; i++) {
-        free(arr[i]);
-        arr[i] = NULL;
-    }
-}
 void print_pid() {
     for (int i=0; i<=ab;i++){
         printf("\n%s\n",history_save[i]);
@@ -54,13 +49,27 @@ void print_pid() {
 void show_paths(){
     for (int i = 0; i < index_rq ; i++){
         write(STDOUT_FILENO,ready_q[i].path,sizeof(ready_q[i].path));
+        char numstr[15];
+        long wait = ready_q[i].exit_time-ready_q[i].entry_time-(ready_q[i].execution_time/CLOCKS_PER_SEC);
+        // sprintf(numstr,"%ld",wait);
+        // size_t num_bytes = write(STDOUT_FILENO, num_str, strlen(num_str));
+        // if (num_bytes < 0) {
+        //     perror("write");
+        //     return 1;
+        // }
         char msg5[] = "\n";
+        write(STDOUT_FILENO, msg5, sizeof(msg5));
+        printf("%ld",wait);
+        printf(" %ld", ready_q[i].execution_time);
+        printf(" %u",ready_q[i].child_pid);
         write(STDOUT_FILENO, msg5, sizeof(msg5));
         setbuf(stdout, NULL);
     }
 }
 void sigint_handler(int signum) {
+    show_paths();
     print_pid();
+
     exit(0);
 }
 // if signal recienved from user : SIGQUIT
@@ -123,14 +132,12 @@ void Create_process_node(char *args[]){
         ready_q[index_rq].child_pid = 0;
         ready_q[index_rq].entry_time = (long)clock() / CLOCKS_PER_SEC;
         ready_q[index_rq].execution_time = 0;
+        ready_q[index_rq].exit_time = 0;
         ready_q[index_rq].execution_done = false;
         ready_q[index_rq].picked = false;
         //updating last ready queue pointer 
         //shared_mem->
         index_rq +=1;
-        write(STDOUT_FILENO,index_rq,sizeof(index_rq));
-        setbuf(stdout, NULL);
-        show_paths();
 }
 // okay tested
 void prime_processes(){
@@ -156,9 +163,9 @@ void prime_processes(){
 }
 // important
 int index_of = 0;
-void schedule_processes(int abc) {
+void schedule_processes() {
     bool termination_condition = false;
-    int i = abc * ncpu;
+    int i = 0;
     while (!termination_condition) {
         termination_condition = true;
         for (i = index_of; i < index_of + ncpu; i++) {
@@ -183,6 +190,7 @@ void schedule_processes(int abc) {
             if (result == 0) {
                 kill(ready_q[i].child_pid, SIGSTOP);
             } else {
+                ready_q[i].exit_time =(long)clock() / CLOCKS_PER_SEC;
                 n_jobs += 1;
             }
         }
@@ -218,7 +226,7 @@ void shell_loop() {
 }
 
 void sigint_handler2(int signum) {
-    /*                                                                                                                                                                                                            /
+    /*                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          /
     // if (index_rq-1 > ncpu && (index_rq) % ncpu != 0) {
     //         rounds = ((index_rq)/ncpu) + 1;
     //     }else if( (index_rq) % ncpu == 0 && index_rq > ncpu){ 
@@ -226,12 +234,11 @@ void sigint_handler2(int signum) {
     //     }else{ 
     //         rounds = 1;
     // }
-    /*                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           */ncpu = index_rq;
+    /*                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          */ncpu = index_rq;
     prime_processes();
-    // for (int i =0 ; i < rounds;i++){
-        schedule_processes(ncpu);
-    // }
-    //delete element of ready_q;
+    schedule_processes();
+    // delete_elements(ready_q);
+    // index_rq = 0;
     shell_loop();
 }
 int main() {
